@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable
+
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
@@ -6,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:path_drawing/path_drawing.dart';
 import 'package:puzzle_test/bottom/clip_path.dart';
 import 'package:puzzle_test/class/PuzzlePiecePainter.dart';
 import 'package:puzzle_test/model/puzzle.dart';
@@ -14,7 +15,6 @@ import 'package:puzzle_test/screens/first_screen.dart';
 import 'package:puzzle_test/utils/network.dart';
 import 'package:video_player/video_player.dart';
 import 'package:xml/xml.dart';
-import 'package:video_compress/video_compress.dart';
 
 // اپلیکیشن پازل تصویری
 class ImagePuzzleApp extends StatefulWidget {
@@ -47,7 +47,6 @@ class _ImagePuzzleAppState extends State<ImagePuzzleApp>
   VideoPlayerController? _videoController;
   bool _isVideo = false;
   final GlobalKey _videoGlobalKey = GlobalKey();
-  List<Rect> _storedFakePieces = []; // قطعات فیک فقط ذخیره می‌شن، نه نمایش
 
   @override
   void initState() {
@@ -108,27 +107,6 @@ class _ImagePuzzleAppState extends State<ImagePuzzleApp>
     _videoController?.dispose();
     _animationController.dispose(); // از بین بردن انیمیشن کنترلر
     super.dispose();
-  }
-
-  //! ریست کردن وضعیت بازی
-  void _resetState() {
-    setState(() {
-      _pieces.clear();
-      _removedPiece = null;
-      _removedPieceOffset = null;
-      _fakePieces.clear();
-      _loadedImage = null;
-    });
-  }
-
-  Future<File?> _fixVideoRotation(File originalVideo) async {
-    final info = await VideoCompress.compressVideo(
-      originalVideo.path,
-      quality: VideoQuality.DefaultQuality,
-      deleteOrigin: false,
-      includeAudio: true,
-    );
-    return info?.file;
   }
 
   //! ساخت قطعات پازل براساس تعداد سطر و ستون
