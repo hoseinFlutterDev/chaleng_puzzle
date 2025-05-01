@@ -1,6 +1,7 @@
 import 'dart:convert' as convert;
 
 import 'package:http/http.dart' as http;
+import 'package:image/image.dart';
 import 'package:puzzle_test/model/puzzle.dart';
 
 class Network {
@@ -47,4 +48,9 @@ class Network {
       print("Response body: ${response.body}");
     }
   }
+
+  //Delete Data
+  // static void deleteData(String id) {
+  //   http.delete(Network.url).then().
+  // }
 }

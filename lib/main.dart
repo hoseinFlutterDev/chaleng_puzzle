@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:puzzle_test/screens/first_screen.dart';
-import 'package:puzzle_test/utils/network.dart';
 
 void main() {
   runApp(const MyApp());
