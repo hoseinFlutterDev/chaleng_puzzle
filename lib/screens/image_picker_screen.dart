@@ -1,4 +1,4 @@
-// ignore_for_file: unused_local_variable
+// ignore_for_file: unused_local_variable, unused_field
 
 import 'dart:io';
 import 'dart:math';
@@ -111,6 +111,7 @@ class _ImagePuzzleAppState extends State<ImagePuzzleApp>
     super.dispose();
   }
 
+  // ignore: unused_element
   Future<void> _initVideo(File file) async {
     _videoController = VideoPlayerController.file(file);
     await _videoController!.initialize();
