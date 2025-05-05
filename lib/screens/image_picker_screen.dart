@@ -9,16 +9,15 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:puzzle_test/bottom/clip_path.dart';
-import 'package:puzzle_test/class/PuzzlePiecePainter.dart';
 import 'package:puzzle_test/model/puzzle.dart';
-import 'package:puzzle_test/screens/first_screen.dart';
 import 'package:puzzle_test/utils/network.dart';
+import 'package:video_compress/video_compress.dart';
 import 'package:video_player/video_player.dart';
 import 'package:xml/xml.dart';
 
 // اپلیکیشن پازل تصویری
 class ImagePuzzleApp extends StatefulWidget {
-  final File file; // ✅ فایل عکس ورودی
+  final File file; // فایل عکس ورودی
 
   final String? rawSvgPath; // مسیر SVG ورودی (اختیاری)
 
@@ -47,6 +46,8 @@ class _ImagePuzzleAppState extends State<ImagePuzzleApp>
   VideoPlayerController? _videoController;
   bool _isVideo = false;
   final GlobalKey _videoGlobalKey = GlobalKey();
+  bool _showPuzzleContainer = false;
+  bool _showSvgOnImage = true;
 
   @override
   void initState() {
@@ -79,9 +80,10 @@ class _ImagePuzzleAppState extends State<ImagePuzzleApp>
     }
   }
 
+  //! لیست اس وی جی ها
   final List<String> svgPaths = [
     '''M109 40.7513C109 43.0112 111.472 44.5175 113.706 44.1745C114.454 44.0596 115.22 44 116 44C124.284 44 131 50.7157 131 59C131 67.2843 124.284 74 116 74C115.22 74 114.453 73.9403 113.705 73.8253C111.472 73.482 109 74.988 109 77.2479V106C109 107.657 107.657 109 106 109L77.2479 109C74.988 109 73.482 111.472 73.8253 113.705C73.9403 114.453 74 115.22 74 116C74 124.284 67.2843 131 59 131C50.7157 131 44 124.284 44 116C44 115.22 44.0597 114.453 44.1747 113.705C44.518 111.472 43.012 109 40.7521 109H12C10.3431 109 9 107.657 9 106L9 12C9 10.3431 10.3431 9 12 9L106 9C107.657 9 109 10.3431 109 12V40.7513Z
-''',
+    ''',
     '''M109 40.7513C109 43.0112 106.528 44.5175 104.294 44.1745C103.546 44.0596 102.78 44 102 44C93.7157 44 87 50.7157 87 59C87 67.2843 93.7157 74 102 74C102.78 74 103.547 73.9403 104.295 73.8253C106.528 73.482 109 74.988 109 77.2479V106C109 107.657 107.657 109 106 109L77.2479 109C74.988 109 73.482 111.472 73.8253 113.705C73.9403 114.453 74 115.22 74 116C74 124.284 67.2843 131 59 131C50.7157 131 44 124.284 44 116C44 115.22 44.0597 114.453 44.1747 113.705C44.518 111.472 43.012 109 40.7521 109H12C10.3431 109 9 107.657 9 106L9 77.2479C9 74.988 11.4717 73.482 13.7054 73.8253C14.4535 73.9403 15.2198 74 16 74C24.2843 74 31 67.2843 31 59C31 50.7157 24.2843 44 16 44C15.2198 44 14.4535 44.0596 13.7055 44.1745C11.4718 44.5175 9 43.0112 9 40.7513L9 12C9 10.3431 10.3431 9 12 9L106 9C107.657 9 109 10.3431 109 12V40.7513Z''',
     '''M122 40.7513C122 43.0112 119.528 44.5175 117.294 44.1745C116.546 44.0596 115.78 44 115 44C106.716 44 100 50.7157 100 59C100 67.2843 106.716 74 115 74C115.78 74 116.547 73.9403 117.295 73.8253C119.528 73.482 122 74.988 122 77.2479L122 106C122 107.657 120.657 109 119 109L90.2479 109C87.988 109 86.482 106.528 86.8253 104.295C86.9403 103.547 87 102.78 87 102C87 93.7157 80.2843 87 72 87C63.7157 87 57 93.7157 57 102C57 102.78 57.0597 103.547 57.1747 104.295C57.518 106.528 56.012 109 53.7521 109H25C23.3431 109 22 107.657 22 106L22 77.2479C22 74.988 19.5283 73.482 17.2946 73.8253C16.5465 73.9403 15.7802 74 15 74C6.71573 74 5.26656e-07 67.2843 0 59C-5.26656e-07 50.7157 6.71573 44 15 44C15.7802 44 16.5465 44.0596 17.2945 44.1745C19.5282 44.5175 22 43.0112 22 40.7513L22 12C22 10.3431 23.3431 9 25 9L119 9C120.657 9 122 10.3431 122 12V40.7513Z''',
     '''M122 40.7513C122 43.0112 124.472 44.5175 126.706 44.1745C127.454 44.0596 128.22 44 129 44C137.284 44 144 50.7157 144 59C144 67.2843 137.284 74 129 74C128.22 74 127.453 73.9403 126.705 73.8253C124.472 73.482 122 74.988 122 77.2479V106C122 107.657 120.657 109 119 109H90.2479C87.988 109 86.482 111.472 86.8253 113.705C86.9403 114.453 87 115.22 87 116C87 124.284 80.2843 131 72 131C63.7157 131 57 124.284 57 116C57 115.22 57.0597 114.453 57.1747 113.705C57.518 111.472 56.012 109 53.7521 109H25C23.3431 109 22 107.657 22 106L22 77.2479C22 74.988 19.5283 73.482 17.2946 73.8253C16.5465 73.9403 15.7802 74 15 74C6.71573 74 5.26656e-07 67.2843 0 59C-5.26656e-07 50.7157 6.71573 44 15 44C15.7802 44 16.5465 44.0596 17.2945 44.1745C19.5282 44.5175 22 43.0112 22 40.7513L22 12C22 10.3431 23.3431 9 25 9L119 9C120.657 9 122 10.3431 122 12V40.7513Z''',
@@ -109,6 +111,39 @@ class _ImagePuzzleAppState extends State<ImagePuzzleApp>
     super.dispose();
   }
 
+  Future<void> _initVideo(File file) async {
+    _videoController = VideoPlayerController.file(file);
+    await _videoController!.initialize();
+
+    final aspect = _videoController!.value.aspectRatio;
+
+    // اگر نسبت تصویر خیلی غیرعادی بود، فشرده‌سازی کن
+    if (aspect < 0.5 || aspect > 2.2) {
+      File? fixedFile = await _fixVideoRotation(file);
+      if (fixedFile != null && fixedFile.path != file.path) {
+        _videoController = VideoPlayerController.file(fixedFile);
+        await _videoController!.initialize();
+      }
+    }
+
+    setState(() {});
+  }
+
+  //! فیکس کردن ابعاد ویدئو
+  Future<File?> _fixVideoRotation(File originalVideo) async {
+    try {
+      final info = await VideoCompress.compressVideo(
+        originalVideo.path,
+        quality: VideoQuality.MediumQuality,
+        deleteOrigin: false,
+        includeAudio: true,
+      );
+      return info?.file;
+    } catch (_) {
+      return null;
+    }
+  }
+
   //! ساخت قطعات پازل براساس تعداد سطر و ستون
   void _generatePuzzlePieces(ui.Image image) {
     const int rows = 7;
@@ -129,42 +164,6 @@ class _ImagePuzzleAppState extends State<ImagePuzzleApp>
         );
       }
     }
-  }
-
-  String _getRandomDifferentPath() {
-    // حذف مسیر کاربر از لیست
-
-    final filteredPaths =
-        svgPaths.where((path) => path != _userSelectedRawSvgPath).toList();
-
-    if (filteredPaths.isEmpty) {
-      // اگر به هر دلیلی لیست خالی شد، fallback
-      return svgPaths.first;
-    }
-
-    final random = Random();
-    return filteredPaths[random.nextInt(filteredPaths.length)];
-  }
-
-  //! اضافه کردن وری وسط تصویر
-  void _setSvgToCenter() {
-    if (_loadedImage == null) return;
-
-    final imgWidth = _loadedImage!.width.toDouble();
-    final imgHeight = _loadedImage!.height.toDouble();
-
-    // اندازه فرضی برای SVG
-    const double svgWidth = 90;
-    const double svgHeight = 100;
-
-    setState(() {
-      _svgTargetRect = Rect.fromLTWH(
-        (imgWidth - svgWidth) / 2,
-        (imgHeight - svgHeight) / 2,
-        svgWidth,
-        svgHeight,
-      );
-    });
   }
 
   //! وقتی روی یک قطعه کلیک شود (برای حذف دستی)
@@ -314,6 +313,7 @@ class _ImagePuzzleAppState extends State<ImagePuzzleApp>
     });
   }
 
+  //*ّبیلد
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -327,352 +327,314 @@ class _ImagePuzzleAppState extends State<ImagePuzzleApp>
                 Expanded(
                   child: _isVideo ? _buildVideoPlayer() : _buildPuzzle(),
                 ),
-
-                const SizedBox(height: 220), // جای خالی برای پنل پایین
+                const SizedBox(height: 195), // جای خالی برای پنل پایین
               ],
             ),
-
             // پنل انتخاب پایین صفحه
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: _isVideo ? 200 : 152, // ارتفاع کمی بیشتر اگر ویدیو باشه
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  border: const Border.symmetric(
-                    horizontal: BorderSide(color: Colors.white),
-                  ),
-                  color: const Color.fromARGB(255, 18, 11, 60),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(15),
-                    topRight: Radius.circular(15),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    SizedBox(height: 20),
-                    if (_isVideo &&
-                        _videoController != null &&
-                        _videoController!.value.isInitialized) ...[
-                      VideoProgressIndicator(
-                        _videoController!,
-                        allowScrubbing: true,
-                        colors: VideoProgressColors(
-                          playedColor: Colors.blueAccent,
-                          bufferedColor: Colors.white30,
-                          backgroundColor: Colors.white10,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _formatDuration(_videoController!.value.position),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                            ),
-                          ),
-                          Text(
-                            _formatDuration(_videoController!.value.duration),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-                    ],
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: () {},
-                            label: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 40),
-                              child: Text('بعدی'),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white24,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              if (_isVideo && _videoController != null) {
-                                await _videoController!.pause();
-                                RenderRepaintBoundary boundary =
-                                    _videoGlobalKey.currentContext!
-                                            .findRenderObject()
-                                        as RenderRepaintBoundary;
-                                ui.Image image = await boundary.toImage(
-                                  pixelRatio: 1.5,
-                                );
-                                setState(() {
-                                  _isVideo = false;
-                                  _loadedImage = image; // این درست هست
-                                  _imageFile =
-                                      null; // چون دیگه فایل ویدیویی نداریم
-                                  _videoController?.dispose();
-                                  _videoController = null;
-                                });
-                                _generatePuzzlePieces(
-                                  image,
-                                ); // ✅✅✅ ساختن قطعات پازل
-                              }
-
-                              // حالا بعد از ثبت فریم، چالش رو انتخاب کن
-
-                              showModalBottomSheet(
-                                isScrollControlled:
-                                    true, // برای گرفتن تمام ارتفاع لازم
-                                context: context,
-                                backgroundColor: const Color.fromARGB(
-                                  255,
-                                  18,
-                                  11,
-                                  60,
-                                ),
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(
-                                    top: Radius.circular(15),
-                                  ),
-                                ),
-                                builder: (BuildContext context) {
-                                  return Container(
-                                    height: 152,
-                                    padding: const EdgeInsets.all(15),
-                                    decoration: BoxDecoration(
-                                      color: const Color.fromARGB(
-                                        255,
-                                        18,
-                                        11,
-                                        60,
-                                      ),
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(15),
-                                        topRight: Radius.circular(15),
-                                      ),
-                                      border: const Border.symmetric(
-                                        horizontal: BorderSide(
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        const Text(
-                                          'انتخاب چالش',
-                                          style: TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 17,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Expanded(
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              ElevatedButton.icon(
-                                                onPressed: () {},
-                                                label: const Text(
-                                                  'چهار گزینه ای',
-                                                ),
-                                                icon: const Icon(
-                                                  Icons.date_range_outlined,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              ElevatedButton.icon(
-                                                onPressed: () {},
-                                                label: const Text('ترک بار'),
-                                                icon: const Icon(
-                                                  Icons.date_range_outlined,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(height: 15),
-                                        Expanded(
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              newMethod(context),
-                                              const SizedBox(width: 12),
-                                              ElevatedButton.icon(
-                                                onPressed: () {},
-                                                label: const Text(
-                                                  'ادامه موزیک بخون',
-                                                ),
-                                                icon: const Icon(
-                                                  Icons.date_range_outlined,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                            child: const Text('انتخاب چالش'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // پایین‌تر قرار می‌گیرند
-            if (_removedPiece != null) ...[
-              _buildBottomPanel(),
-              _buildMovingPiece(),
-            ],
-
-            // ✅ اینجا دیگر نمایش SVG دوتایی نمی‌شود، فقط از داخل _buildPuzzle() می‌آید
+            selectMetod(context),
+            // کانتینر پازل که از پایین میاد
+            if (_showPuzzleContainer) chalengMetod(),
           ],
         ),
       ),
     );
   }
 
-  //! MY Elevate
-  ElevatedButton newMethod(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () {
-        Navigator.pop(context);
-        showModalBottomSheet(
-          isScrollControlled: true, // برای گرفتن تمام ارتفاع لازم
-          context: context,
-          backgroundColor: const Color.fromARGB(255, 18, 11, 60),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+  //! متد انتخاب اس وی جی
+  AnimatedPositioned chalengMetod() {
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 600),
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        height: 200,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.white70),
+          color: const Color.fromARGB(255, 19, 13, 41),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(15),
+            topRight: Radius.circular(15),
           ),
-          builder: (BuildContext context) {
-            return Container(
-              height: 240,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white70),
-                color: const Color.fromARGB(255, 19, 13, 41),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(15),
-                  topRight: Radius.circular(15),
+        ),
+        child: Column(
+          children: [
+            const Center(
+              child: Text(
+                'چالش پازل',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+            ),
+            const SizedBox(height: 10),
+            // لیست SVGها
+            Expanded(
+              child: Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white24),
+                  borderRadius: BorderRadius.circular(10),
+                  color: const Color.fromARGB(255, 33, 31, 49),
+                ),
+                child: MyRow(
+                  selectedSvgPath: selectedSvgPath,
+                  removedPiece: _removedPiece,
+                  image: _loadedImage,
+                  onTap: (path, index) {
+                    setState(() {
+                      selectedSvgPath = path;
+                    });
+                    _generatePuzzleAtCenter();
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 25,
+              child: Row(
                 children: [
-                  const Center(
-                    child: Text(
-                      'چالش پازل',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Handle completion logic
+                      if (_svgTargetRect == null) return;
+
+                      final correct = _toCorrectRect(_svgTargetRect!);
+
+                      // فرض بر اینکه از همین تابع برای درست + جعلی استفاده می‌کنی
+                      final all = _generateFakePieces(_svgTargetRect!);
+                      final fakes =
+                          all
+                              .where((r) => r != _svgTargetRect!)
+                              .map(_toFakePiece)
+                              .toList();
+
+                      Network.postData(
+                        correctPieceRect: correct,
+                        fakePieces: fakes,
+                      );
+                      setState(() {
+                        _showPuzzleContainer = false;
+                        _showSvgOnImage = false;
+                      });
+                    },
+                    child: const Text(
+                      'تمام',
+                      style: TextStyle(color: Colors.black),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    child: Container(
-                      height: 150,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white24),
-                        borderRadius: BorderRadius.circular(10),
-                        color: const Color.fromARGB(255, 33, 31, 49),
-                      ),
-                      child: Column(
-                        children: [
-                          MyRow(
-                            onTap: (assetPath) async {
-                              final rawD = await loadRawSvgPathData(assetPath);
-
-                              setState(() {
-                                _userSelectedRawSvgPath = rawD;
-                              });
-
-                              _setSvgToCenter(); // بلافاصله بعد انتخاب، وسط قرار می‌گیره
-                              _generatePuzzleAtCenter(); // این تابع رو اضافه می‌کنیم
-                              Navigator.pop(context, rawD);
-
-                              _setSelectedSvg(assetPath);
-                              print('✅ SVG انتخاب‌شده: $assetPath');
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  Expanded(
-                    child: Row(
-                      children: [
-                        ElevatedButton(
-                          onPressed: () async {
-                            if (selectedSvgPath != null) {
-                              final rawD = await loadRawSvgPathData(
-                                selectedSvgPath!,
-                              );
-                              //      Navigator.pop(context, rawD);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('لطفاً یک پازل انتخاب کنید'),
-                                ),
-                              );
-                            }
-                          },
-                          child: const Text(
-                            'تمام',
-                            style: TextStyle(color: Colors.black),
-                          ),
-                        ),
-                        const Spacer(),
-                        const Text(
-                          'پازل مورد نظر را انتخاب کنید',
-                          style: TextStyle(
-                            color: Color(0xfff43464B),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
+                  const Spacer(),
+                  const Text(
+                    'پازل مورد نظر را انتخاب کنید',
+                    style: TextStyle(color: Color(0xfff43464B), fontSize: 12),
                   ),
                 ],
               ),
-            );
-          },
-        );
-      },
-      child: const Text('پازل'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  void _setSelectedSvg(String svgPath) {
-    setState(() {
-      selectedSvgPath = svgPath;
-    });
+  //! متد انتخاب نوع چالش
+  Positioned selectMetod(BuildContext context) {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        height: _isVideo ? 190 : 152, // ارتفاع کمی بیشتر اگر ویدیو باشه
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          border: const Border.symmetric(
+            horizontal: BorderSide(color: Colors.white),
+          ),
+          color: const Color.fromARGB(255, 18, 11, 60),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(15),
+            topRight: Radius.circular(15),
+          ),
+        ),
+        child: Column(
+          children: [
+            SizedBox(height: 20),
+            if (_isVideo &&
+                _videoController != null &&
+                _videoController!.value.isInitialized) ...[
+              VideoProgressIndicator(
+                _videoController!,
+                allowScrubbing: true,
+                colors: VideoProgressColors(
+                  playedColor: Colors.blueAccent,
+                  bufferedColor: Colors.white30,
+                  backgroundColor: Colors.white10,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _formatDuration(_videoController!.value.position),
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                  Text(
+                    _formatDuration(_videoController!.value.duration),
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5),
+            ],
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {},
+                    label: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 40),
+                      child: Text('بعدی'),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white24,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                  SizedBox(width: 15),
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (_isVideo && _videoController != null) {
+                        await _videoController!.pause();
+                        RenderRepaintBoundary boundary =
+                            _videoGlobalKey.currentContext!.findRenderObject()
+                                as RenderRepaintBoundary;
+                        ui.Image image = await boundary.toImage(
+                          pixelRatio: 1.5,
+                        );
+                        setState(() {
+                          _isVideo = false;
+                          _loadedImage = image;
+                          _imageFile = null; // چون دیگه فایل ویدیویی نداریم
+                          _videoController?.dispose();
+                          _videoController = null;
+                        });
+                        _generatePuzzlePieces(image);
+                      }
+
+                      // حالا بعد از ثبت فریم، چالش رو انتخاب کن
+                      showModalBottomSheet(
+                        isScrollControlled: true, // برای گرفتن تمام ارتفاع لازم
+                        context: context,
+                        backgroundColor: const Color.fromARGB(255, 18, 11, 60),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(15),
+                          ),
+                        ),
+                        builder: (BuildContext context) {
+                          return Container(
+                            height: 152,
+                            padding: const EdgeInsets.all(15),
+                            decoration: BoxDecoration(
+                              color: const Color.fromARGB(255, 18, 11, 60),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(15),
+                                topRight: Radius.circular(15),
+                              ),
+                              border: const Border.symmetric(
+                                horizontal: BorderSide(color: Colors.white),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  'انتخاب چالش',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Expanded(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      ElevatedButton.icon(
+                                        onPressed: () {},
+                                        label: const Text('چهار گزینه ای'),
+                                        icon: const Icon(Icons.question_answer),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      ElevatedButton.icon(
+                                        onPressed: () {},
+                                        label: const Text('ترک بار'),
+                                        icon: const Icon(Icons.drag_handle),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 15),
+                                Expanded(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          // پازل => بستن BottomSheet و سپس نمایش کانتینر
+                                          Navigator.pop(
+                                            context,
+                                          ); // بستن BottomSheet
+
+                                          // نمایش کانتینر بعد از یک تاخیر کوتاه (برای روانی)
+                                          Future.delayed(
+                                            const Duration(milliseconds: 100),
+                                            () {
+                                              setState(() {
+                                                _showPuzzleContainer = true;
+                                                _showSvgOnImage = true;
+                                                _svgTargetRect = null;
+                                                selectedSvgPath = null;
+                                                _removedPiece = null;
+                                              });
+                                            },
+                                          );
+                                        },
+                                        icon: const Icon(Icons.extension),
+                                        label: const Text('پازل'),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      ElevatedButton.icon(
+                                        onPressed: () {},
+                                        label: const Text('ادامه موزیک بخون'),
+                                        icon: const Icon(Icons.music_note),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    child: const Text('انتخاب چالش'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<String> loadRawSvgPathData(String assetPath) async {
@@ -682,6 +644,7 @@ class _ImagePuzzleAppState extends State<ImagePuzzleApp>
     return pathElem.getAttribute('d') ?? '';
   }
 
+  //! پلیر ویدئو
   Widget _buildVideoPlayer() {
     if (_videoController == null || !_videoController!.value.isInitialized) {
       return const Center(child: CircularProgressIndicator());
@@ -769,7 +732,7 @@ class _ImagePuzzleAppState extends State<ImagePuzzleApp>
                       ),
 
                       // نمایش SVG در نقطه‌ای که کاربر کلیک کرده است
-                      if (_svgTargetRect != null)
+                      if (_svgTargetRect != null && _showSvgOnImage)
                         Positioned(
                           left: _svgTargetRect!.left,
                           top: _svgTargetRect!.top,
@@ -791,161 +754,34 @@ class _ImagePuzzleAppState extends State<ImagePuzzleApp>
     );
   }
 
-  //! ساخت پنل پایین
-  Widget _buildBottomPanel() {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Column(
-        children: [
-          Container(
-            height: 240,
-            width: 400,
-            decoration: BoxDecoration(
-              color: Color.fromARGB(255, 19, 13, 41),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-              border: Border.all(color: Color(0xfff43464B)),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  'چالش پازل',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 15),
-                  child: Container(
-                    height: 160,
-                    width: 350,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white70, width: 0.5),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: buildPanelPieces(),
-                    ),
-                  ),
-                ),
-                _buildFooter(),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget buildPanelPieces() {
-    if (_panelPieces.isEmpty) {
-      return Center(child: Text('...هنوز هیچ قطعه‌ای انتخاب نشده'));
+    if (_removedPiece == null || _loadedImage == null) {
+      return Center(child: Text('...در حال بارگذاری قطعه'));
     }
-    return GridView.builder(
-      padding: EdgeInsets.zero,
-      physics: NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 1.5,
-      ),
-      itemCount: _panelPieces.length,
-      itemBuilder: (_, i) {
-        final piece = _panelPieces[i];
-        final isCorrect = piece == _removedPiece; // قطعه درست
+    final screenWidth = MediaQuery.of(context).size.width;
+    final panelSize = screenWidth * 0.3; // حدود 30 درصد عرض صفحه
 
-        return GestureDetector(
-          onTap: () => _handlePieceClick(piece),
-          child: Container(
-            decoration: BoxDecoration(
-              border:
-                  isCorrect
-                      ? Border.all(
-                        color: const ui.Color.fromARGB(255, 76, 175, 87),
-                        width: 3,
-                      ) // ✅ حاشیه سبز برای درست
-                      : null, // ❌ هیچ چیزی برای بقیه
-              borderRadius: BorderRadius.circular(8),
+    return Center(
+      child: GestureDetector(
+        onTap: () => _handlePieceClick(_removedPiece!),
+        child: Container(
+          width: panelSize,
+          height: panelSize,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: const ui.Color.fromARGB(255, 76, 175, 87),
+              width: 2,
             ),
-            child: SizedBox(
-              width: piece.width,
-              height: piece.height,
-              child: CustomPaint(
-                painter: PuzzlePieceClipPathPainter(
-                  image: _loadedImage!,
-                  rect: piece,
-                  rawSvgPath:
-                      isCorrect
-                          ? _userSelectedRawSvgPath
-                          : _getRandomDifferentPath(),
-                ),
-              ),
-            ),
+            borderRadius: BorderRadius.circular(8),
           ),
-        );
-      },
-    );
-  }
-
-  //! ساخت قطعه متحرک
-  Widget _buildMovingPiece() {
-    if (_removedPiece == null || _removedPieceOffset == null) {
-      return SizedBox.shrink();
-    }
-
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Positioned(
-          top: _animation.value.dy,
-          left: _animation.value.dx,
           child: CustomPaint(
-            painter: PuzzlePiecePainter(
+            painter: PuzzlePieceClipPathPainter(
               image: _loadedImage!,
               rect: _removedPiece!,
+              rawSvgPath: _userSelectedRawSvgPath,
             ),
           ),
-        );
-      },
-    );
-  }
-
-  //! فوتر پایین صفحه
-  Widget _buildFooter() {
-    return Expanded(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          ElevatedButton(
-            onPressed: () {
-              if (_svgTargetRect == null) return;
-
-              final correct = _toCorrectRect(_svgTargetRect!);
-
-              // فرض بر اینکه از همین تابع برای درست + جعلی استفاده می‌کنی
-              final all = _generateFakePieces(_svgTargetRect!);
-              final fakes =
-                  all
-                      .where((r) => r != _svgTargetRect!)
-                      .map(_toFakePiece)
-                      .toList();
-
-              Network.postData(correctPieceRect: correct, fakePieces: fakes);
-              print('send!!!!!!!!!!!!!');
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => HomePage()),
-              );
-            },
-            child: const Text("تمام "),
-          ),
-
-          const SizedBox(width: 50),
-          const Text(
-            'پازل درست را انتخاب کنید',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white24),
-          ),
-        ],
+        ),
       ),
     );
   }
