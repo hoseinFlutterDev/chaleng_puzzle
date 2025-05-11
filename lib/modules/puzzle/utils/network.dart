@@ -1,7 +1,7 @@
 import 'dart:convert' as convert;
 
 import 'package:http/http.dart' as http;
-import 'package:puzzle_test/model/puzzle.dart';
+import 'package:puzzle_test/modules/puzzle/model/puzzle.dart';
 
 class Network {
   //

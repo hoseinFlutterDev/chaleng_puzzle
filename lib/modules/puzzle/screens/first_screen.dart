@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:video_compress/video_compress.dart';
-import 'package:puzzle_test/screens/image_picker_screen.dart';
+import 'package:puzzle_test/modules/puzzle/screens/image_picker_screen.dart';
 
 class HomePage extends StatelessWidget {
   Future<File?> _fixVideoRotation(File originalVideo) async {

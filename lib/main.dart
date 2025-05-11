@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:puzzle_test/screens/first_screen.dart';
+import 'package:puzzle_test/modules/puzzle/screens/first_screen.dart';
 
 void main() {
   runApp(const MyApp());

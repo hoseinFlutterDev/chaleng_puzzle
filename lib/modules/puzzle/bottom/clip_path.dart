@@ -59,21 +59,29 @@ class PuzzlePieceClipPathPainter extends CustomPainter {
 }
 
 class PuzzlePainter extends CustomPainter {
-  final ui.Image image; // تصویر اصلی
-  final List<Rect> pieces; // لیست قطعات
+  final ui.Image image;
+  final List<Rect> pieces;
 
   PuzzlePainter({required this.image, required this.pieces});
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
-    for (Rect rect in pieces) {
-      canvas.drawImageRect(image, rect, rect, paint); // نقاشی هر قطعه
+
+    for (var rect in pieces) {
+      canvas.drawImageRect(
+        image,
+        rect, // تصویر اصلی: فقط این قسمت بریده میشه
+        rect, // روی بوم هم دقیقاً در همین مکان رسم میشه
+        paint,
+      );
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant PuzzlePainter oldDelegate) {
+    return oldDelegate.image != image || oldDelegate.pieces != pieces;
+  }
 }
 
 // ویجت نمایشی برای هر SVG پازل
